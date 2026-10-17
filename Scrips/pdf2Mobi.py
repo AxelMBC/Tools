@@ -16,14 +16,17 @@ Requisitos:
   "C:\\Program Files\\Calibre2\\ebook-convert.exe".
 
 Uso:
-  python pdf2kindle.py archivo.pdf "Titulo" "Autor"
-  python pdf2kindle.py archivo.pdf "Titulo" "Autor" --cover portada.jpg
-  python pdf2kindle.py archivo.pdf "Titulo" "Autor" --cover portada.jpg --azw3
+    python pdf2kindle.py archivo.pdf "Titulo" "Autor"
+    python pdf2kindle.py archivo.pdf "Titulo" "Autor" --cover portada.jpg
+    python pdf2kindle.py archivo.pdf "Titulo" "Autor" --cover portada.jpg --azw3
 
   --cover   imagen JPG o PNG para la portada (idealmente vertical, 1600x2560)
   --azw3    genera AZW3 en vez de MOBI
 
-Si se cuela basura o se corta texto, ajusta MIN_X (que tan a la izquierda empieza
+Ejemplo:
+    python pdf2kindle.py la-casa-de-asterion-borges.pdf "La casa de Asterión" "Jorge Luis Borges" --cover LaCasaDeAsterionPortada.jpg
+
+    Si se cuela basura o se corta texto, ajusta MIN_X (que tan a la izquierda empieza
 la columna principal, como fraccion del ancho) y MARGIN (encabezado/pie).
 """
 import re
@@ -56,7 +59,8 @@ def collect_lines(doc, body_size):
                     x0, y0, x1, y1 = s["bbox"]
                     if not t.strip() or PRINTABLE.search(t):
                         continue                      # vacios o glifos basura
-                    if s["flags"] & 1:                # superindice (notas al pie)
+                    # superindice (notas al pie)
+                    if s["flags"] & 1:
                         continue
                     if s["size"] < body_size * 0.9:   # encabezados, pies, notas
                         continue
@@ -68,7 +72,8 @@ def collect_lines(doc, body_size):
         line = []
         for sp in spans:
             if line and abs(sp[0] - line[0][0]) > 2:
-                out.append(_mk(pn, line, W)); line = []
+                out.append(_mk(pn, line, W))
+                line = []
             line.append(sp)
         if line:
             out.append(_mk(pn, line, W))
@@ -93,7 +98,8 @@ def extract_paragraphs(pdf_path):
         return []
     left = min(l[2] for l in lines)
     right = max(l[3] for l in lines)
-    pitches = [b[1] - a[1] for a, b in zip(lines, lines[1:]) if a[0] == b[0] and b[1] > a[1]]
+    pitches = [b[1] - a[1]
+               for a, b in zip(lines, lines[1:]) if a[0] == b[0] and b[1] > a[1]]
     pitch = statistics.median(pitches) if pitches else body_size * 1.5
 
     paras, prev = [], None
@@ -113,7 +119,8 @@ def extract_paragraphs(pdf_path):
         if new_para:
             paras.append(text)
         elif paras[-1].endswith("-") and not paras[-1].endswith(" -"):
-            paras[-1] = paras[-1][:-1] + text         # palabra partida con guion
+            # palabra partida con guion
+            paras[-1] = paras[-1][:-1] + text
         else:
             paras[-1] += " " + text
         prev = ln
@@ -133,12 +140,14 @@ def find_ebook_convert():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="PDF de clase -> MOBI/AZW3 limpio para Kindle")
+    ap = argparse.ArgumentParser(
+        description="PDF de clase -> MOBI/AZW3 limpio para Kindle")
     ap.add_argument("pdf", help="PDF de entrada")
     ap.add_argument("title", help="Titulo del libro")
     ap.add_argument("author", help="Autor")
     ap.add_argument("--cover", help="Imagen de portada (JPG o PNG)")
-    ap.add_argument("--azw3", action="store_true", help="Generar AZW3 en vez de MOBI")
+    ap.add_argument("--azw3", action="store_true",
+                    help="Generar AZW3 en vez de MOBI")
     args = ap.parse_args()
 
     if args.cover and not Path(args.cover).is_file():
